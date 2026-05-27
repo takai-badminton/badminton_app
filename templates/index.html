@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>バドミントン分析（ダブルス用）</title>
+
+    <style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 30px;
+        background-color: #f9f9f9;
+    }
+
+    h1 {
+        color: #222;
+    }
+
+    h2 {
+        margin-top: 30px;
+        color: #444;
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        background-color: white;
+    }
+
+    th, td {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+    }
+
+    th {
+        background-color: #f0f0f0;
+    }
+
+    a {
+        text-decoration: none;
+        color: #0077cc;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    button {
+        padding: 8px 16px;
+        background-color: #0077cc;
+        color: white;
+        border: none;
+        border-radius: 5px;
+    }
+
+    button:hover {
+        background-color: #005fa3;
+    }
+    </style>
+
+</head>
+
+<body>
+
+<h1>🏸バドミントン分析（ダブルス用）</h1>
+
+<!-- エラー表示 -->
+{% if error %}
+<p style="color:red;">{{ error }}</p>
+{% endif %}
+
+<hr>
+
+<!-- 全体データ -->
+<h2>全体データ</h2>
+<p>合計試合数: {{ total }} 試合</p>
+<!--意味なし、一応残しとく<p>通算勝率: {{ win_rate | round(1) }} %</p>-->
+
+<hr>
+
+<h2>プレイヤーElo（強さ）ランキング</h2>
+
+{% for name, rating in player_elo_sorted[:5] %}
+<p>
+<a href="/player/{{ name }}">{{ name }}</a>: {{ rating | round(1) }}
+</p>
+{% endfor %}
+<div style="
+    background-color: #eef6ff;
+    padding: 10px;
+    border-left: 5px solid #4a90e2;
+    margin-bottom: 10px;
+">
+<strong>Eloとは？</strong><br>
+Elo：対戦結果から計算した強さ（高いほど強い）
+</div>
+
+<hr>
+
+<h2>ペアElo（強さ）ランキング</h2>
+
+{% for pair, rating in pair_elo_sorted[:5] %}
+<p>
+<a href="/player/{{ pair[0] }}">{{ pair[0] }}</a> + <a href="/player/{{ pair[1] }}">{{ pair[1] }}</a> :
+{{ rating | round(1) }}
+</p>
+{% endfor %}
+
+<hr>
+
+<!--直近フォーム作ったけど意味なかったたため保留 -->
+<!--<h2>直近5試合</h2>
+<p>
+勝率: {{ recent.win_rate }} %<br>
+</p>
+<hr>-->
+
+<!-- プレイヤー勝率いったん表示しない --><!--なんか知らんけどコメントアウトしてもエラー出たのでif文入れときました-->
+ {% if player_rank is defined %}
+<h2>プレイヤー勝率ランキングTOP5</h2>
+{% for name, win, game, rate in player_rank[:5] %}
+<p>
+{<a href="/player/{{ name }}">{{ name }}</a> :}
+{{ rate | round(1) }}%
+（{{ win }}勝 / {{ game }}試合）
+</p>
+{% endfor %}
+<hr>
+{% endif %}
+
+
+<!-- ペア勝率いったん表示しない -->
+<!--<h2>ペア勝率ランキングTOP5</h2>-->
+<!--{% for pair, win, game, rate in pair_top5 %}
+<p>
+{{ pair[0] }} + {{ pair[1] }} :
+{{ rate | round(1) }}%
+（{{ win }}勝 / {{ game }}試合）
+</p>
+{% endfor %}
+<hr>-->
+
+<!--プレイヤー別パフォーマンスいったん表示しない-->
+<!--<h2>プレイヤー別パフォーマンス</h2>
+{% for name, s in player_diff.items() %}
+<p>
+<a href="/player/{{ name }}">{{ name }}</a> :
+平均得失点差 {{ s.mean | round(1) }} /
+分散 {{ s.var | round(1) }}
+（{{ s.games }}試合）
+</p>
+{% endfor %}
+<hr>-->
+
+<!-- 基本入力フォーム -->
+<h2>試合記録 </h2>
+
+<p style="color: gray;">
+※選手名は完全一致で管理されます（例：田中 と たなか は別扱い）
+</p>
+
+<form action="/add" method="post">
+
+<style>
+.teams {
+    display: flex;
+    gap: 50px;
+}
+
+.team {
+    display: flex;
+    flex-direction: column;
+}
+
+.team input {
+    margin-bottom: 5px;
+}
+</style>
+
+<div class="teams">
+    <div class="team">
+        <h3>チーム1</h3>
+        <input type="text" name="team1_p1" placeholder="選手名" required>
+        <input type="text" name="team1_p2" placeholder="選手名" required>
+    </div>
+
+    <div style="display:flex; align-items:center; margin-top:60px;">
+        <strong>VS</strong>
+    </div>
+
+    <div class="team">
+        <h3>チーム2</h3>
+        <input type="text" name="team2_p1" placeholder="選手名" required>
+        <input type="text" name="team2_p2" placeholder="選手名" required>
+    </div>
+</div>
+
+<h3>スコア</h3>
+チーム1: <input type="number" name="score1" placeholder="点数" min="0" max="30">
+チーム2: <input type="number" name="score2" placeholder="点数"min="0" max="30"><br><br>
+
+<button type="submit">保存</button>
+
+</form>
+
+<hr>
+
+<!--予測入力フォーム,移動させました -->
+<!--<h2>勝率予測</h2>
+
+<form method="post" action="/predict">
+
+<div class="teams">
+    <div class="team">
+        <h3>チーム1</h3>
+        <input type="text" name="p1">
+        <input type="text" name="p2">
+    </div>
+
+    <div style="display:flex; align-items:center; margin-top:60px;">
+        <strong>VS</strong>
+    </div>
+
+    <div class="team">
+        <h3>チーム2</h3>
+        <input type="text" name="p3">
+        <input type="text" name="p4">
+    </div>
+</div>
+
+<button type="submit">予測</button>
+</form>
+<hr>-->
+
+
+<!--勝率予測ページ案内-->
+<h2><a href="/predict">▶ 勝率予測はこちら</a></h2>
+
+<hr>
+
+<!--これもいったん保留-->
+<!--<h2>⚡ 番狂わせランキングTOP5</h2>
+{% for m, s, prob in surprise_top5 %}
+<p>
+{{ m.team1[0] }} + {{ m.team1[1] }} vs
+{{ m.team2[0] }} + {{ m.team2[1] }}<br>
+
+スコア：{{ m.score1 }} - {{ m.score2 }}<br>
+
+意外度：{{ s | round(2) }}<br>
+（発生確率 {{ (prob * 100) | round(1) }}%）
+</p>
+<hr>
+{% endfor %}
+<hr>-->
+
+<!--試合一覧 -->
+<h2>全試合履歴</h2>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <th>チーム1</th>
+        <th>チーム2</th>
+        <th>スコア</th>
+        <th>記録日時</th>
+        <th>操作</th>
+    </tr>
+
+    {% for m in matches %}
+    <tr>
+        <td><a href="/player/{{ m.team1[0] }}">{{ m.team1[0] }}</a> / <a href="/player/{{ m.team1[1] }}">{{ m.team1[1] }}</a></td>
+        <td><a href="/player/{{ m.team2[0] }}">{{ m.team2[0] }}</a> /<a href="/player/{{ m.team2[1] }}">{{ m.team2[1] }}</a></td>
+        <td>{{ m.score1 }} - {{ m.score2 }}</td>
+        <td>{{ m.created_at }}</td>
+        <td><a href="/delete/{{ m.id }}" onclick="return confirm('本当に削除しますか？')">
+            削除
+            </a>
+    </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>

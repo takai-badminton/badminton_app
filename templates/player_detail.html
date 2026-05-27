@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ name }} の分析</title>
+</head>
+
+    <style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 30px;
+        background-color: #f9f9f9;
+    }
+
+    h1 {
+        color: #222;
+    }
+
+    h2 {
+        margin-top: 30px;
+        color: #444;
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        background-color: white;
+    }
+
+    th, td {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+    }
+
+    th {
+        background-color: #f0f0f0;
+    }
+
+    a {
+        text-decoration: none;
+        color: #0077cc;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    button {
+        padding: 8px 16px;
+        background-color: #0077cc;
+        color: white;
+        border: none;
+        border-radius: 5px;
+    }
+
+    button:hover {
+        background-color: #005fa3;
+    }
+    </style>
+
+<body>
+
+<h1>{{ name }} の分析ページ</h1>
+
+<hr>
+
+<h2>基本データ</h2>
+{% set s = stats.get(name, {"win": 0, "game": 0}) %}
+<p>
+勝率: {{ (s.win/ s.game * 100) | round(1) if s.game else 0 }} %<br>
+（{{ s.win if s.game else 0 }}勝 / {{ s.game if s.game else 0 }}試合）
+</p>
+
+<hr>
+
+<h2>Elo（強さ）<br><small>(※Eloは勝率だけでなく、相手の強さも考慮した指標です)</small></h2>
+<p>順位: {{ rank }} 位</p>
+<p>Elo: {{ elo | round(1) }} (信頼度: {{ trust }})</p>
+<p>試合数：{{ s.game if s.game else 0 }}</p>
+<div style="
+    background-color: #eef6ff;
+    padding: 10px;
+    border-left: 5px solid #4a90e2;
+    margin-bottom: 10px;
+">
+<strong>Elo・信頼度とは？</strong><br>
+Elo：対戦結果から計算した強さで1500が基準（1500より高いほど強い）<br>
+信頼度：試合数が多いほど安定する指標
+</div>
+
+<hr>
+
+<h2>Elo（強さ）推移</h2>
+
+{% if history and history|length > 0 %}
+<canvas id="eloChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const data = {{ history | tojson }};
+
+// 試合番号（1,2,3,...）
+const labels = data.map((_, i) => i + 1);
+
+new Chart(document.getElementById('eloChart'), {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Elo',
+            data: data,
+            tension: 0.3,
+            pointRadius:3
+        },
+        {
+       label: '基準(1500)',
+            data: labels.map(() => 1500),
+            borderDash: [5,5],
+            pointRadius: 0 
+        }
+        ]
+    },
+     options: {
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: '試合数'
+                }
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: '{{ name }}のElo'
+                },
+                min: 1200,
+                max: 1800
+            }
+        }
+    }
+});
+</script>
+
+{% else %}
+<p>データがありません</p>
+{% endif %}
+
+<hr>
+
+<h2>パフォーマンス</h2>
+<p>
+平均得失点差: {{ d.mean | round(1) if d else 0 }}<br>
+ばらつき: {{ d.std | round(1) if d else 0 }}<br>
+安定度: {{ d.stability if d else "不明" }}<br>
+試合数: {{ d.games if d else 0 }}
+</p>
+<div style="
+    background-color: #eef6ff;
+    padding: 10px;
+    border-left: 5px solid #4a90e2;
+    margin-bottom: 10px;
+">
+<strong>平均得失点差・ばらつき・安定度とは？</strong><br>
+平均得失点差：1試合あたりどれくらい点差をつけているか（＋なら優勢、−なら劣勢）<br>
+ばらつき：試合ごとの結果のブレの大きさ（小さいほど安定）<br>
+安定度：ばらつきをもとにした評価（安定・普通・波が激しい）<br>
+※平均が高く、ばらつきが小さいほど安定して強いプレイヤーです
+</div>
+
+
+<hr>
+
+<h2>直近5試合</h2>
+<p>
+勝率: {{ recent.win_rate }} %<br>
+（{{ recent.wins }}勝 / {{ recent.games }}試合）
+</p>
+
+<hr>
+
+<h2>vs 相手別傾向</h2>
+
+{% for opp, win, game, rate, delta in opp_stats %}
+<p>
+vs {{ opp[0] }} / {{ opp[1] }} :
+勝率{{ rate | round(1) }}%
+（{{ win }}勝 / {{ game }}試合）
+<br>
+期待との差：{{ delta | round(1) }}%
+</p>
+{% endfor %}
+
+<div style="
+    background-color: #eef6ff;
+    padding: 10px;
+    border-left: 5px solid #4a90e2;
+    margin-bottom: 10px;
+">
+<strong>期待との差とは？</strong><br>
+Eloから予測される勝率と実際の勝率の差。<br>
+＋：相性が良い / −：苦手な相手
+</div>
+
+<hr>
+
+<h2>試合履歴</h2>
+
+<table border="1" cellpadding="5">
+<tr>
+    <th>チーム1</th>
+    <th>チーム2</th>
+    <th>スコア</th>
+</tr>
+
+{% for m in matches %}
+<tr>
+    <td>{{ m.team1[0] }} / {{ m.team1[1] }}</td>
+    <td>{{ m.team2[0] }} / {{ m.team2[1] }}</td>
+    <td>{{ m.score1 }} - {{ m.score2 }}</td>
+</tr>
+{% endfor %}
+
+</table>
+
+<hr>
+
+<a href="/">← 戻る</a>
+
+</body>
+</html>
