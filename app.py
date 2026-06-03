@@ -6,15 +6,25 @@ import math
 app = Flask(__name__)
 
 
-def compute_all_stats(matches):
-    player_elo_data = player_elo(matches)
+def compute_all_stats(matches): # まとめて全部計算するよ関数、
+    player_elo_data = player_elo(matches) # eloの辞書を作ってる
     pair_elo_data = pair_elo(matches)
 
-    return {
-        "player_elo": player_elo_data,
+    return { # 辞書を戻り値にしてる！下の９個のデータを１つの辞書にまとめてる、使い勝手がいい！！
+        "player_elo": player_elo_data, 
         "pair_elo": pair_elo_data,
-        "player_elo_sorted": sorted(player_elo_data.items(), key=lambda x: x[1], reverse=True),
-        "pair_elo_sorted": sorted(pair_elo_data.items(), key=lambda x: x[1], reverse=True),
+        "player_elo_sorted": 
+            sorted( # 50音順にして、リストを返す（sorted()はリストを返す！！）
+                player_elo_data.items(), # キー（名前）とバリュー（elo値）を取得して、タプルにして返す
+                key=lambda x: x[1], # タプルの2番目（elo値）を基準に並べる
+                reverse=True # 昇順から降順にして
+            ),
+        "pair_elo_sorted": 
+            sorted(
+                pair_elo_data.items(), 
+                key=lambda x: x[1], 
+                reverse=True
+            ),
         "player_stats_data": player_stats(matches),
         "pair_stats_data": pair_stats(matches),
         "recent": recent_result(matches),
@@ -23,33 +33,34 @@ def compute_all_stats(matches):
     }
 
 
-def player_elo_history(matches): # 各プレイヤーのelo推移グラフ用データ作成関数
+def player_elo_history(matches): # 各プレイヤーのelo推移グラフ用データ作成関数、eloの推移に使う
     elo = defaultdict(lambda: 1500) # 現在のelo保存用、まだキーがないときにアクセスしたら自動バリュー作成
     history = defaultdict(list) # 初アクセス時に空のリストをバリューとしてもつ、初期値
 
-    for i, m in enumerate(reversed(matches)):  # 
-        team1 = m["team1"]
+    for i, m in enumerate(reversed(matches)):  # enumerate():インデックス（0から）と値を同時に取り出す関数
+                                               # load_data()でorder by id descしてるから最新→最古になってる、それを最古→最新にしてる、eloだから
+        team1 = m["team1"] # matchesのteam1をteam1にいれて
         team2 = m["team2"]
 
-        team1_avg = sum(elo[p] for p in team1) / 2
+        team1_avg = sum(elo[p] for p in team1) / 2 # eloのチーム平均とって
         team2_avg = sum(elo[p] for p in team2) / 2
 
         if m["score1"] > m["score2"]:
-            score1 = 1
+            score1 = 1 # 勝ったら1として
         else:
-            score1 = 0
+            score1 = 0 # 負けたら0
 
-        new1, new2 = update_elo(team1_avg, team2_avg, score1)
+        new1, new2 = update_elo(team1_avg, team2_avg, score1) # 上で作ったデータをupdateにいれて、返ってきたのをnew1,new2とする
 
-        for p in team1:
-            elo[p] += (new1 - team1_avg)
-            history[p].append(elo[p])
+        for p in team1: # team1から一人ずつ取り出して
+            elo[p] += (new1 - team1_avg) # 差を加えて
+            history[p].append(elo[p]) # historyリストに新しいeloを加える、試合を重ねるごとに増える
 
         for p in team2:
             elo[p] += (new2 - team2_avg)
             history[p].append(elo[p])
 
-    return history
+    return history # historyを返す
 
 
 def get_k(games): # 試合数によってK値を変える関数
@@ -194,7 +205,7 @@ def pair_elo(matches): # ペアelo計算関数
 
     games_played = defaultdict(int) # defauldict(lambda:0)と同じ、0で初期化
 
-    for m in matches: # 全試合見て
+    for m in reversed(matches): # 全試合見て
         t1 = tuple(sorted(m["team1"])) # ソートしてタプルにすることで入力順によらなくなる、同じペアとしてみなせる
         t2 = tuple(sorted(m["team2"]))
 
@@ -230,7 +241,7 @@ def player_elo(matches): # 選手elo計算関数
                                     # 存在しない選手（キー）なら1500（バリュー）をとして自動で作る
     games_played = defaultdict(int) # (=lambda: 0と同じ)各プレイヤーの試合数、intで初期化だから0が初期値
 
-    for m in matches: # 全試合を順番に見る
+    for m in reversed(matches): # 全試合を順番に見る
         team1 = m["team1"] # チーム取得
         team2 = m["team2"]
 
@@ -645,32 +656,44 @@ def delete(id): # idにurlの数字が入る
     return redirect('/') # トップに戻る
 
 
-@app.route('/player/<name>')
+@app.route('/player/<name>') # ルーティング
 def player_detail(name):
-    matches = load_data()
-    history_all = player_elo_history(matches)
-    player_history = history_all.get(name, [])
-    # その人が出た試合だけ抽出
-    player_matches = []
-    for m in matches:
-        if name in m["team1"] or name in m["team2"]:
-            player_matches.append(m)
+    matches = load_data() # 全試合取得
+    history_all = player_elo_history(matches) # elo履歴取得
+    player_history = history_all.get(name, []) # そいつのeloだけ取り出す、存在しなければ空のリスト
+    # その人が出た試合だけ抽出する！
+    player_matches = [] # 空のリストを作成
+    for m in matches: # 全試合見て
+        if name in m["team1"] or name in m["team2"]: # そいつが試合に出てたら
+            player_matches.append(m) # player_matchesに追加、そいつが出た試合のみ入る、つまりそいつのみの試合データ
 
     # 統計
-    player_elo_data = player_elo(matches)
-    elo_value = player_elo_data.get(name, 1500)
-    stats = player_stats(player_matches)
-    d = player_diff_stats(player_matches).get(name,{"mean":0,"var":0,"std":0,"games":0,"stability":"不明"})
-    recent = recent_result(player_matches)
-    opp_stats = opponent_stats(player_matches, name)
-    player_elo_sorted = sorted(player_elo_data.items(), key=lambda x: x[1], reverse=True)
+    player_elo_data = player_elo(matches) # elo計算
+    elo_value = player_elo_data.get(name, 1500) # そいつのelo取得、なければ1500にしとく
+    stats = player_stats(player_matches) # そいつの試合を分析さす
+    d = player_diff_stats(player_matches).get( # 得失点差計算させて
+        name, # 名前と
+        {"mean":0,"var":0,"std":0,"games":0,"stability":"不明"} # この辞書だけ抜き取る、なかったらこの値を返すようにしてる
+    )
+    recent = recent_result(player_matches) # 最近の成績分析
+    opp_stats = opponent_stats(player_matches, name) # 相性分析
+    player_elo_sorted = sorted( #eloランキング作成
+        player_elo_data.items(),  # 名前とeloとってタプルにして
+        key=lambda x: x[1], # eloを軸にソート
+        reverse=True # 降順
+    )
 
-    rank = None
-    for i, (n, _) in enumerate(player_elo_sorted):
-        if n == name:
-            rank = i + 1
-            break
 
+    # 順位計算
+    rank = None # まだ順位なし
+    for i, (n, e) in enumerate(player_elo_sorted):
+    # 例：[("山田",1701),("田中",1642),("佐藤",1580)]　↓
+    # 1周目は、i = 0, n = "山田", e = 1701  2周目以降も同様に当てはめてって  
+        if n == name: # もし名前が一致してたら下の処理
+            rank = i + 1 # インデックス番号+1が順位
+            break # で、処理終了
+
+    # 試合数から信頼度
     if len(player_matches) < 10:
         trust = "低"
     elif len(player_matches) < 30:
@@ -678,7 +701,7 @@ def player_detail(name):
     else:
         trust = "高"
 
-    return render_template(
+    return render_template( # htmlに渡す
         "player_detail.html",
         name=name,
         matches=player_matches,
