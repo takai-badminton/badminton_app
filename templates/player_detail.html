@@ -1,65 +1,12 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ name }} の分析</title>
-</head>
+{% extends "base.html" %}
 
-    <style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 30px;
-        background-color: #f9f9f9;
-    }
+{% block title %}
+{{ name }} の分析
+{% endblock %}
 
-    h1 {
-        color: #222;
-    }
+{% block content %}
 
-    h2 {
-        margin-top: 30px;
-        color: #444;
-    }
-
-    table {
-        border-collapse: collapse;
-        width: 100%;
-        background-color: white;
-    }
-
-    th, td {
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-    }
-
-    th {
-        background-color: #f0f0f0;
-    }
-
-    a {
-        text-decoration: none;
-        color: #0077cc;
-    }
-
-    a:hover {
-        text-decoration: underline;
-    }
-
-    button {
-        padding: 8px 16px;
-        background-color: #0077cc;
-        color: white;
-        border: none;
-        border-radius: 5px;
-    }
-
-    button:hover {
-        background-color: #005fa3;
-    }
-    </style>
-
-<body>
-
-<h1>{{ name }} の分析ページ</h1>
+<h2>{{ name }} の分析ページ</h2>
 
 <hr>
 
@@ -76,12 +23,9 @@
 <p>順位: {{ rank }} 位</p>
 <p>Elo: {{ elo | round(1) }} (信頼度: {{ trust }})</p>
 <p>試合数：{{ s.game if s.game else 0 }}</p>
-<div style="
-    background-color: #eef6ff;
-    padding: 10px;
-    border-left: 5px solid #4a90e2;
-    margin-bottom: 10px;
-">
+
+<div class="info-box">
+
 <strong>Elo・信頼度とは？</strong><br>
 Elo：対戦結果から計算した強さで1500が基準（1500より高いほど強い）<br>
 信頼度：試合数が多いほど安定する指標
@@ -154,12 +98,9 @@ new Chart(document.getElementById('eloChart'), {
 安定度: {{ d.stability if d else "不明" }}<br>
 試合数: {{ d.games if d else 0 }}
 </p>
-<div style="
-    background-color: #eef6ff;
-    padding: 10px;
-    border-left: 5px solid #4a90e2;
-    margin-bottom: 10px;
-">
+
+<div class="info-box">
+
 <strong>平均得失点差・ばらつき・安定度とは？</strong><br>
 平均得失点差：1試合あたりどれくらい点差をつけているか（＋なら優勢、−なら劣勢）<br>
 ばらつき：試合ごとの結果のブレの大きさ（小さいほど安定）<br>
@@ -190,12 +131,8 @@ vs {{ opp[0] }} / {{ opp[1] }} :
 </p>
 {% endfor %}
 
-<div style="
-    background-color: #eef6ff;
-    padding: 10px;
-    border-left: 5px solid #4a90e2;
-    margin-bottom: 10px;
-">
+<div class="info-box">
+
 <strong>期待との差とは？</strong><br>
 Eloから予測される勝率と実際の勝率の差。<br>
 ＋：相性が良い / −：苦手な相手
@@ -205,7 +142,7 @@ Eloから予測される勝率と実際の勝率の差。<br>
 
 <h2>試合履歴</h2>
 
-<table border="1" cellpadding="5">
+<table>
 <tr>
     <th>チーム1</th>
     <th>チーム2</th>
@@ -224,7 +161,8 @@ Eloから予測される勝率と実際の勝率の差。<br>
 
 <hr>
 
-<a href="/">← 戻る</a>
+<a href="{{ url_for('index') }}">
+    ← 戻る
+</a>
 
-</body>
-</html>
+{% endblock %}

@@ -1,70 +1,17 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>バドミントン分析（ダブルス用）</title>
+{% extends "base.html" %}
 
-    <style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 30px;
-        background-color: #f9f9f9;
-    }
+{% block title %}
+トップページ
+{% endblock %}
 
-    h1 {
-        color: #222;
-    }
+{% block content %}
 
-    h2 {
-        margin-top: 30px;
-        color: #444;
-    }
-
-    table {
-        border-collapse: collapse;
-        width: 100%;
-        background-color: white;
-    }
-
-    th, td {
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-    }
-
-    th {
-        background-color: #f0f0f0;
-    }
-
-    a {
-        text-decoration: none;
-        color: #0077cc;
-    }
-
-    a:hover {
-        text-decoration: underline;
-    }
-
-    button {
-        padding: 8px 16px;
-        background-color: #0077cc;
-        color: white;
-        border: none;
-        border-radius: 5px;
-    }
-
-    button:hover {
-        background-color: #005fa3;
-    }
-    </style>
-
-</head>
-
-<body>
-
-<h1>🏸バドミントン分析（ダブルス用）</h1>
 
 <!-- エラー表示 -->
 {% if error %}
-<p style="color:red;">{{ error }}</p>
+<div class="error-box">
+    {{ error }}
+</div>
 {% endif %}
 
 <hr>
@@ -83,12 +30,9 @@
 <a href="/player/{{ name }}">{{ name }}</a>: {{ rating | round(1) }}
 </p>
 {% endfor %}
-<div style="
-    background-color: #eef6ff;
-    padding: 10px;
-    border-left: 5px solid #4a90e2;
-    margin-bottom: 10px;
-">
+
+<div class="info-box">
+
 <strong>Eloとは？</strong><br>
 Elo：対戦結果から計算した強さ（高いほど強い）
 </div>
@@ -158,22 +102,6 @@ Elo：対戦結果から計算した強さ（高いほど強い）
 </p>
 
 <form action="/add" method="post">
-
-<style>
-.teams {
-    display: flex;
-    gap: 50px;
-}
-
-.team {
-    display: flex;
-    flex-direction: column;
-}
-
-.team input {
-    margin-bottom: 5px;
-}
-</style>
 
 <div class="teams">
     <div class="team">
@@ -277,5 +205,4 @@ Elo：対戦結果から計算した強さ（高いほど強い）
     {% endfor %}
 </table>
 
-</body>
-</html>
+{% endblock %}

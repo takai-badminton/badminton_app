@@ -1,89 +1,20 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>勝率予測</title>
-</head>
+{% extends "base.html" %}
 
-    <style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 30px;
-        background-color: #f9f9f9;
-    }
+{% block title %}
+勝率予測はこちら
+{% endblock %}
 
-    h1 {
-        color: #222;
-    }
+{% block content %}
 
-    h2 {
-        margin-top: 30px;
-        color: #444;
-    }
-
-    table {
-        border-collapse: collapse;
-        width: 100%;
-        background-color: white;
-    }
-
-    th, td {
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-    }
-
-    th {
-        background-color: #f0f0f0;
-    }
-
-    a {
-        text-decoration: none;
-        color: #0077cc;
-    }
-
-    a:hover {
-        text-decoration: underline;
-    }
-
-    button {
-        padding: 8px 16px;
-        background-color: #0077cc;
-        color: white;
-        border: none;
-        border-radius: 5px;
-    }
-
-    button:hover {
-        background-color: #005fa3;
-    }
-    </style>
-
-
-<body>
-
-<h1>勝率予測</h1>
 
 {% if request.args.get('error') %}
-<div style="color:white; background:red; padding:10px; border-radius:5px;">
-{{ request.args.get('error') }}
+<div class="error-box">
+    {{ request.args.get('error') }}
 </div>
 {% endif %}
 
-<form method="post" action="/predict">
-<style>
-.teams {
-    display: flex;
-    gap: 50px;
-}
-
-.team {
-    display: flex;
-    flex-direction: column;
-}
-
-.team input {
-    margin-bottom: 5px;
-}
-</style>
+<form method="post"
+      action="{{ url_for('predict') }}">
 
 <div class="teams">
     <div class="team">
@@ -106,14 +37,15 @@
     <button type="submit">予測</button>
 </form>
 
-{% if result %}
+{% if result is not none %}
 <hr>
 <h2>予測結果</h2>
 <p>チーム1の勝率：{{ result }} %</p>
 {% endif %}
 
 <hr>
-<a href="/">← 戻る</a>
+<a href="{{ url_for('index') }}">
+    ← 戻る
+</a>
 
-</body>
-</html>
+{% endblock %}
