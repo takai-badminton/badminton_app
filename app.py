@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
 from collections import defaultdict # 存在しないキーでバリューを取り出そうとしてもエラーにならない、勝手に初期値をバリューとして作成、保存してくれる、すごい！！
 import math
@@ -133,23 +133,33 @@ def predict():
     result = None # 最初は結果なし
 
     if request.method == 'POST': # フォーム送信されたときだけ下の処理
+                
         p1 = normalize_name(request.form['team1_p1']) # フォームから名前取得
         p2 = normalize_name(request.form['team1_p2']) 
         p3 = normalize_name(request.form['team2_p1'])
         p4 = normalize_name(request.form['team2_p2'])
-
+        
         all_players = [p1, p2, p3, p4] # リスト化して後でチェックしやすくする
 
         # 未入力チェック
-        if "" in all_players: # 空文字があれば下の処理
-            return redirect('/predict?error=未入力の選手があります')
+        if "" in all_players:
+            return redirect(
+                url_for(
+                    'predict',
+                    error='選手名を入力してください'
+                )
+            )
 
         # 同一人物チェック
         if len(set(all_players)) != 4:
             # set():重複消える
             # で、長さが4じゃなかったら重複ありだから下の処理
-            return redirect('/predict?error=同じ選手名は使用できません')
-
+            return redirect(
+                url_for(
+                    'predict',
+                    error='同じ選手名は使用できません'
+                    )
+                )
         matches = load_data() #dbから全試合の情報を取得
         stats = compute_all_stats(matches) # 統計全部取得（辞書になって戻ってくる）
 
@@ -167,7 +177,12 @@ def predict():
                 unknown.append(p) # 存在しない選手を抽出（リスト内包表記だとunknown = [p for p in all_players if p not in valid_players]）
 
         if unknown: # アンノウンのリストになんか入ってたら、それを存在しない選手として表示
-            return redirect('/predict?error=存在しない選手: ' + "、".join(unknown)) #join()でリスト内を文字連結
+            return redirect(
+                url_for(
+                'predict',
+                error='存在しない選手: ' + "、".join(unknown)
+                ) #join()でリスト内を文字連結
+            )
         
         # ペア作成
         pair1 = tuple(sorted([p1, p2])) # sortedして表記そろえて、キーにするためにタプルにする
@@ -607,33 +622,64 @@ def index(): # アクセスがきたらこの関数を起動
 def add():
     # 画面から送られてきたデータを受け取る
     # 空欄チェック
-    if request.form['team1_p1'] == "" or request.form['team1_p2'] == "" or request.form['team2_p1'] == "" or request.form['team2_p2'] == "":
-        return redirect('/?error=相手名を入力してください') # トップページにエラー情報をくっつけて戻る
 
     if request.form['score1'] == "" or request.form['score2'] == "":
-        return redirect('/?error=スコアを入力してください')
+        return redirect(
+            url_for(
+                'index',
+                error='スコアを入力してください'
+                )
+            )
 
     score1 = int(request.form['score1'])
     score2 = int(request.form['score2'])
     
     if score1 < 0 or score2 < 0:
-        return redirect('/?error=スコアは0以上にしてください')
-    
+        return redirect(
+            url_for(
+                'index',
+                error='スコアは0以上にしてください'
+                )
+            )
     if score1 > 30 or score2 > 30:
-        return redirect('/?error=スコアは30以下にしてください')
+        return redirect(
+            url_for(
+                'index',
+                'error=スコアは30以下にしてください'
+                )
+            )
 
     p1 = normalize_name(request.form['team1_p1'])
     p2 = normalize_name(request.form['team1_p2'])
     p3 = normalize_name(request.form['team2_p1'])
     p4 = normalize_name(request.form['team2_p2'])
 
+    all_players = [p1, p2, p3, p4]
+
+    if "" in all_players:
+        return redirect(
+            url_for(
+                'index',
+                error='選手名を入力してください'
+            )
+        )
+
+
+    if len(set(all_players)) != 4:
+        return redirect(
+            url_for(
+                'index',
+                error='同じ選手名は使用できません'
+            )
+        )
+
     data = (
         p1,
         p2,
         p3,
         p4,
-        int(request.form['score1']),
-        int(request.form['score2'])
+        score1,
+        score2
     ) # sqlに渡す用にタプルを作る
 
     conn = sqlite3.connect('matches.db') # matches.dbというデータベースに接続する、なければ作る
@@ -649,11 +695,12 @@ def add():
     # execute(SQL, データ):sqlとデータは別で渡す
     conn.commit() # 保存！！
     conn.close() # データベースとの接続を閉じる！！    
-    return redirect('/') # トップページ(/)に戻れ！！→index()起動
+    return redirect(url_for('index')) # トップページ(/)に戻れ！！→index()起動
 
 
-@app.route('/delete/<int:id>') # /delete/3みたいなurlがきたらid=3 を取り出して delete(id) に渡す
+@app.route('/delete/<int:id>', methods=['POST']) # /delete/3みたいなurlがきたらid=3 を取り出して delete(id) に渡す
 def delete(id): # idにurlの数字が入る
+
     conn = sqlite3.connect('matches.db')
     c = conn.cursor()
 
@@ -663,7 +710,7 @@ def delete(id): # idにurlの数字が入る
     conn.commit() # 削除確定
     conn.close() # DB閉じる
 
-    return redirect('/') # トップに戻る
+    return redirect(url_for('index')) # トップに戻る
 
 
 @app.route('/player/<name>') # ルーティング

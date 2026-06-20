@@ -101,7 +101,7 @@ Elo：対戦結果から計算した強さ（高いほど強い）
 ※選手名は完全一致で管理されます（例：田中 と たなか は別扱い）
 </p>
 
-<form action="/add" method="post">
+<form action="{{ url_for('add')}}" method="post">
 
 <div class="teams">
     <div class="team">
@@ -198,10 +198,20 @@ Elo：対戦結果から計算した強さ（高いほど強い）
         <td><a href="/player/{{ m.team2[0] }}">{{ m.team2[0] }}</a> /<a href="/player/{{ m.team2[1] }}">{{ m.team2[1] }}</a></td>
         <td>{{ m.score1 }} - {{ m.score2 }}</td>
         <td>{{ m.created_at }}</td>
-        <td><a href="/delete/{{ m.id }}" onclick="return confirm('本当に削除しますか？')">
+    <td>
+
+    <form
+        action="{{ url_for('delete', id=m.id) }}"
+        method="post"
+        onsubmit="return confirm('本当に削除しますか？')">
+
+        <button type="submit">
             削除
-            </a>
-    </tr>
+        </button>
+
+    </form>
+
+</td>    
     {% endfor %}
 </table>
 
