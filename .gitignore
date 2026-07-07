@@ -1,2 +1,4 @@
 matches.db
 __pycache__/
+*.log
+.env
