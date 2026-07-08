@@ -92,3 +92,35 @@ def delete_match(id):
 
     conn.commit()
     conn.close()
+
+
+def count_matches():
+    conn = get_connection()
+    c = conn.cursor()
+
+    c.execute("SELECT COUNT(*) FROM matches")
+    count = c.fetchone()[0]
+
+    conn.close()
+    return count
+
+
+def seed_sample_data():
+    if count_matches() > 0:
+        return
+
+    sample_matches = [
+        ("田中", "佐藤", "鈴木", "高橋", 21, 18),
+        ("田中", "山本", "鈴木", "中村", 19, 21),
+        ("佐藤", "山本", "高橋", "中村", 21, 15),
+        ("田中", "中村", "佐藤", "鈴木", 22, 20),
+        ("高橋", "山本", "田中", "佐藤", 16, 21),
+        ("鈴木", "中村", "高橋", "山本", 21, 17),
+        ("田中", "鈴木", "佐藤", "高橋", 18, 21),
+        ("山本", "中村", "田中", "高橋", 21, 19),
+        ("佐藤", "鈴木", "山本", "中村", 21, 14),
+        ("田中", "佐藤", "山本", "高橋", 20, 22),
+    ]
+
+    for match in sample_matches:
+        add_match(*match)    
