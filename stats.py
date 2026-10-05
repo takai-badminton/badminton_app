@@ -46,7 +46,8 @@ def player_elo_history(matches): # 各プレイヤーのelo推移グラフ用デ
         else:
             score1 = 0 # 負けたら0
 
-        new1, new2 = update_elo(team1_avg, team2_avg, score1) # 上で作ったデータをupdateにいれて、返ってきたのをnew1,new2とする
+        k = match_k(m["score1"], m["score2"]) # player_eloと同じK値にそろえる
+        new1, new2 = update_elo(team1_avg, team2_avg, score1, k) # 上で作ったデータをupdateにいれて、返ってきたのをnew1,new2とする
 
         for p in team1: # team1から一人ずつ取り出して
             elo[p] += (new1 - team1_avg) # 差を加えて
@@ -59,7 +60,20 @@ def player_elo_history(matches): # 各プレイヤーのelo推移グラフ用デ
     return history # historyを返す
 
 
-def get_k(games): # 試合数によってK値を変える関数
+   # ゲーム単位の検証（調整期間2022-23, BWF男子ダブルス）で、現行の40・4は最良より明確に悪く、
+   # 固定K=24・係数2が最良だった。K=16〜32・係数1〜6付近が同程度に良い領域。
+   # 点差は加算ではなく倍率で反映する方が良かった（K = 24 × (1 + 2 × 点差割合)）
+K_BASE = 24
+MARGIN_COEF = 2
+
+
+def match_k(score1, score2): # 1試合分のK値（点差が大きいほど大きく動かす）
+    total = score1 + score2
+    margin = abs(score1 - score2) / total if total > 0 else 0 # 点差割合（0〜1）
+    return K_BASE * (1 + MARGIN_COEF * margin)
+
+
+def get_k(games): # 試合数によってK値を変える関数（ペアEloで使用）
     if games < 10: # 試合数少ないときは大きく変動させる
         return 40
     elif games < 30: # 安定してきたら変動を減らす
@@ -96,6 +110,8 @@ def update_elo(ra, rb, score_a, k=32): # eloレート更新関数
     return ra_new, rb_new # 返す
 
 
+    # 注意: 画面表示用のペアElo。K値は旧設計（試合数別K + 点差/10加算）のまま。
+    # 個人Eloと違い、この設定は検証していない（/predictでも使っていない）。
 def pair_elo(matches): # ペアelo計算関数
     elo = defaultdict(lambda: 1500) # 初アクセス時に自動生成
 
@@ -147,14 +163,7 @@ def player_elo(matches): # 選手elo計算関数
         team2_avg = sum(elo[p] for p in team2) / 2
 
         # K値調整
-        g1 = sum(games_played[p] for p in team1) / 2 # 平均試合数
-        g2 = sum(games_played[p] for p in team2) / 2
-        diff = abs(m["score1"] - m["score2"]) # 点差計算、abs（絶対値）
-        bonus = diff / 10 # 点差ボーナス、点差がつけばつくほどボーナスを大きくしてる
-        # k値完成
-        k = (get_k(g1) + get_k(g2)) / 2 + bonus
-        # 上の方で定義したget_k()を引数を指定して呼び出し
-        # チーム1とチーム2のk値を足して平均取ってボーナスを足す
+        k = match_k(m["score1"], m["score2"]) # 固定K×点差倍率（試合数では変えない）
 
         if m["score1"] > m["score2"]: #勝敗を0か1かにする
             score1 = 1 # 勝ち = 1,負け = 0　elo式で使う
