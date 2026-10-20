@@ -107,7 +107,6 @@ pip install flask
 python app.py
 ```
 
-初回起動時に `matches.db` が自動で作られます。デバッグモードは環境変数 `FLASK_DEBUG=1` で有効にします。
 
 ## ファイル構成
 
