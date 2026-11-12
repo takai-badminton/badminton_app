@@ -2,3 +2,7 @@ matches.db
 __pycache__/
 *.log
 .env
+
+# 検証用データ
+validation/md.csv
+validation/predictions_2024_onward.csv
